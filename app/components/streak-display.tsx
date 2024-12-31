@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Flame } from "lucide-react";
-import { useStorage } from "@/lib/hooks/use-storage";
 import { UserResponse } from "@/lib/types";
 import {
   Dialog,
@@ -14,6 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { StreakSkeleton } from "./skeletons/streak-skeleton";
 
 function calculateStreak(
   responses: UserResponse[],
@@ -73,21 +73,17 @@ function calculateStreak(
   return streak;
 }
 
-export function StreakDisplay() {
-  const [targetQuestions, setTargetQuestions, targetLoading] =
-    useStorage<number>("targetQuestions", 5);
-  const [responses, setResponses, isLoading] = useStorage<UserResponse[]>(
-    "responses",
-    []
-  );
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [tempTarget, setTempTarget] = useState(targetQuestions.toString());
-
-  // Don't render anything while loading to prevent hydration mismatch
-  if (targetLoading || isLoading) {
-    return null;
-  }
-
+export function StreakDisplay({
+  responses,
+  targetQuestions,
+  isLoading,
+  isLoaded,
+}: {
+  responses: UserResponse[];
+  targetQuestions: number;
+  isLoading: boolean;
+  isLoaded: boolean;
+}) {
   const streak = calculateStreak(responses, targetQuestions);
 
   // Get today's progress
@@ -96,60 +92,24 @@ export function StreakDisplay() {
     (r) => new Date(r.timestamp).toISOString().split("T")[0] === today
   ).length;
 
-  const handleSaveTarget = () => {
-    const newTarget = parseInt(tempTarget);
-    if (!isNaN(newTarget) && newTarget > 0) {
-      setTargetQuestions(newTarget);
-      setIsDialogOpen(false);
-    }
-  };
+  if (isLoading || !isLoaded) {
+    return <StreakSkeleton />;
+  }
 
   return (
     <Card className="p-4 mb-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Flame
-              className={`h-6 w-6 ${
-                streak > 0 ? "text-orange-500" : "text-gray-400"
-              }`}
-            />
-            <span className="text-2xl font-bold">{streak}</span>
-          </div>
-          <div className="text-sm text-gray-500">
-            {todayResponses}/{targetQuestions} questions today
-          </div>
+      <div className="flex items-center justify-between w-full">
+        <div className="flex items-center gap-2">
+          <Flame
+            className={`h-6 w-6 ${
+              streak > 0 ? "text-orange-500" : "text-gray-400"
+            }`}
+          />
+          <span className="text-2xl font-bold">{streak}</span>
         </div>
-
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="sm">
-              Set Target
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Daily Question Target</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm text-gray-500">
-                  Number of questions to maintain streak
-                </label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={tempTarget}
-                  onChange={(e) => setTempTarget(e.target.value)}
-                  className="w-full"
-                />
-              </div>
-              <Button onClick={handleSaveTarget} className="w-full">
-                Save Target
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <div className="text-sm text-gray-500">
+          {todayResponses}/{targetQuestions} questions today
+        </div>
       </div>
     </Card>
   );

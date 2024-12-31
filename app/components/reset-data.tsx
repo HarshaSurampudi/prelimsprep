@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
-import { useStorage } from "@/lib/hooks/use-storage";
-import { UserResponse } from "@/lib/types";
+import { saveUserResponses } from "@/lib/firebase/storage";
+import { useAuth } from "@/lib/context/auth-context";
 import {
   Dialog,
   DialogContent,
@@ -15,17 +15,14 @@ import {
 } from "@/components/ui/dialog";
 
 export function ResetData() {
-  const [responses, setResponses] = useStorage<UserResponse[]>("responses", []);
-  const [targetQuestions, setTargetQuestions] = useStorage<number>(
-    "targetQuestions",
-    5
-  );
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleReset = async () => {
-    await setResponses([]);
-    await setTargetQuestions(5);
-    setIsOpen(false);
+    if (user) {
+      await saveUserResponses(user.uid, []);
+      setIsOpen(false);
+    }
   };
 
   return (

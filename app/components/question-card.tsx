@@ -1,18 +1,31 @@
 "use client";
 
 import { Question, UserResponse } from "@/lib/types";
-import { useQuestionState } from "@/lib/hooks/use-question-state";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatTopicName } from "@/lib/utils";
-import { useState, useRef, TouchEvent } from "react";
+import { useState, useRef, TouchEvent, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
+import { getUserResponses } from "@/lib/firebase/storage";
+import { useAuth } from "@/lib/context/auth-context";
+import { Loader2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { AlertCircle } from "lucide-react";
+import { addQuestionReport } from "@/lib/firebase/storage";
 
 interface QuestionCardProps {
   question: Question;
   onAnswer: (answer: string) => void;
   showExplanation: boolean;
   onNext: () => void;
+  attemptNumber: number;
 }
 
 export function QuestionCard({
@@ -20,9 +33,29 @@ export function QuestionCard({
   onAnswer,
   showExplanation,
   onNext,
+  attemptNumber,
 }: QuestionCardProps) {
+  const { user } = useAuth();
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [swipeOffset, setSwipeOffset] = useState(0);
+  const [responses, setResponses] = useState<UserResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAnswering, setIsAnswering] = useState(false);
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+  const [reportText, setReportText] = useState("");
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+
+  useEffect(() => {
+    async function loadResponses() {
+      if (user) {
+        const userResponses = await getUserResponses(user.uid);
+        setResponses(userResponses);
+      }
+      setIsLoading(false);
+    }
+    loadResponses();
+  }, [user]);
+
   const isCorrect = selectedAnswer === question.correct_answer;
 
   const touchStartX = useRef<number>(0);
@@ -61,15 +94,29 @@ export function QuestionCard({
     setSwipeOffset(0);
   };
 
-  // Calculate the attempt number before the user answers
-  const savedResponses = localStorage.getItem("responses");
-  const responses: UserResponse[] = savedResponses
-    ? JSON.parse(savedResponses)
-    : [];
+  const handleReportSubmit = async () => {
+    if (!user || !reportText.trim()) return;
 
-  const attemptNumber =
-    responses.filter((r) => r.question.question_text === question.question_text)
-      .length + (showExplanation ? 0 : 1);
+    setIsSubmittingReport(true);
+    try {
+      await addQuestionReport({
+        questionId:
+          question.year + "-" + question.question_text.substring(0, 50), // Create a unique identifier
+        userId: user.uid,
+        reportText: reportText.trim(),
+        timestamp: new Date().toISOString(),
+        questionData: question,
+      });
+      setReportText("");
+      setIsReportDialogOpen(false);
+    } catch (error) {
+      console.error("Failed to submit report:", error);
+    } finally {
+      setIsSubmittingReport(false);
+    }
+  };
+
+  if (isLoading) return null;
 
   return (
     <Card
@@ -88,16 +135,57 @@ export function QuestionCard({
             Topic: {formatTopicName(question.topic)}
           </p>
         </div>
-        <Badge
-          variant="secondary"
-          className={`shrink-0 ${
-            attemptNumber > 1
-              ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-              : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-          }`}
-        >
-          {attemptNumber === 1 ? "First Attempt" : `Attempt #${attemptNumber}`}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Dialog
+            open={isReportDialogOpen}
+            onOpenChange={setIsReportDialogOpen}
+          >
+            <DialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              >
+                <AlertCircle className="h-5 w-5" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Report an Issue</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <Textarea
+                  placeholder="Describe the issue with this question..."
+                  value={reportText}
+                  onChange={(e) => setReportText(e.target.value)}
+                  className="min-h-[100px]"
+                />
+                <Button
+                  onClick={handleReportSubmit}
+                  disabled={!reportText.trim() || isSubmittingReport}
+                  className="w-full"
+                >
+                  {isSubmittingReport ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  Submit Report
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+          <Badge
+            variant="secondary"
+            className={`shrink-0 ${
+              attemptNumber > 1
+                ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+            }`}
+          >
+            {attemptNumber === 1
+              ? "First Attempt"
+              : `Attempt #${attemptNumber}`}
+          </Badge>
+        </div>
       </div>
 
       <div className="space-y-6">
@@ -119,15 +207,21 @@ export function QuestionCard({
                     : ""
                   : ""
               }`}
-              onClick={() => {
+              onClick={async () => {
+                setIsAnswering(true);
                 setSelectedAnswer(key);
-                onAnswer(key);
+                await onAnswer(key);
+                setIsAnswering(false);
               }}
-              disabled={showExplanation}
+              disabled={showExplanation || isAnswering}
             >
-              <span className="font-medium mr-2 shrink-0">
-                {key.toUpperCase()}.
-              </span>
+              {isAnswering && selectedAnswer === key ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <span className="font-medium mr-2 shrink-0">
+                  {key.toUpperCase()}.
+                </span>
+              )}
               <span>{value}</span>
             </Button>
           ))}
