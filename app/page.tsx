@@ -7,6 +7,9 @@ import { ProgressDisplay } from "./components/progress-display";
 import { ResetData } from "./components/reset-data";
 import { StreakDisplay } from "./components/streak-display";
 import { useState } from "react";
+import { useAuth } from "@/lib/context/auth-context";
+import { SignIn } from "@/components/auth/sign-in";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type TopicStats = {
   topic: string;
@@ -47,15 +50,51 @@ const yearStats: YearStats[] = [
 ];
 
 export default function Home() {
+  const { user, loading } = useAuth();
   const [showStats, setShowStats] = useState(false);
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-8 sm:py-12">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6">
+          <Skeleton className="h-10 w-48 mx-auto mb-4" />
+
+          <Skeleton className="h-6 w-3/4 mx-auto mb-8" />
+
+          <Skeleton className="h-24 w-full mb-6" />
+          <Skeleton className="h-24 w-full mb-6" />
+
+          <div className="p-4 sm:p-6 bg-white/50 dark:bg-gray-800/50 backdrop-blur rounded-lg">
+            <Skeleton className="h-8 w-40 mb-4" />
+
+            <div className="space-y-4 mb-6">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex gap-3">
+                  <Skeleton className="h-5 w-5 mt-1" />
+                  <Skeleton className="h-5 flex-1" />
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Skeleton className="h-10 flex-1" />
+              <Skeleton className="h-10 w-32" />
+            </div>
+          </div>
+
+          <Skeleton className="h-4 w-24 mx-auto mt-6" />
+        </div>
+      </main>
+    );
+  }
+
+  if (!user) {
+    return <SignIn />;
+  }
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-8 sm:py-12">
       <div className="max-w-2xl mx-auto px-4 sm:px-6">
-        <div className="mb-6 sm:mb-8 flex justify-center">
-          <BookOpen className="h-12 w-12 sm:h-16 sm:w-16 text-primary" />
-        </div>
-
         <h1 className="text-3xl sm:text-4xl font-bold mb-3 sm:mb-4 text-center text-gray-900 dark:text-gray-50">
           PrelimsPrep
         </h1>
@@ -149,8 +188,9 @@ export default function Home() {
             <li className="flex items-start gap-3">
               <span className="text-primary mt-1">•</span>
               <span>
-                Your data is stored locally in your browser and is not shared
-                with anyone. It will be lost if you clear your browser data.
+                Your data is securely stored in the cloud and synced across your
+                devices. You can access your progress from anywhere by signing
+                in with your Google account.
               </span>
             </li>
           </ul>

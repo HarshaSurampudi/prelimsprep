@@ -1,58 +1,57 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
+import { useStorage } from "@/lib/hooks/use-storage";
+import { UserResponse } from "@/lib/types";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Trash2 } from "lucide-react";
-import { useState } from "react";
 
 export function ResetData() {
-  const [open, setOpen] = useState(false);
+  const [responses, setResponses] = useStorage<UserResponse[]>("responses", []);
+  const [targetQuestions, setTargetQuestions] = useStorage<number>(
+    "targetQuestions",
+    5
+  );
+  const [isOpen, setIsOpen] = useState(false);
 
-  const handleReset = () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("responses");
-      window.dispatchEvent(new Event("storage"));
-      setOpen(false);
-
-      // Reload the page after a brief delay to allow the dialog to close
-      setTimeout(() => {
-        window.location.reload();
-      }, 100);
-    }
+  const handleReset = async () => {
+    await setResponses([]);
+    await setTargetQuestions(5);
+    setIsOpen(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="destructive" className="gap-2">
-          <Trash2 className="h-4 w-4" />
-          Reset Progress
+        <Button variant="outline" size="lg" className="w-full">
+          <Trash2 className="mr-2 h-4 w-4" />
+          Reset Data
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle>Reset Progress</DialogTitle>
+          <DialogTitle>Reset All Data</DialogTitle>
           <DialogDescription>
-            This will permanently delete all your practice history and progress.
-            This action cannot be undone.
+            This will permanently delete all your progress and statistics. This
+            action cannot be undone.
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={() => setOpen(false)}>
+        <div className="flex justify-end space-x-2">
+          <Button variant="outline" onClick={() => setIsOpen(false)}>
             Cancel
           </Button>
           <Button variant="destructive" onClick={handleReset}>
-            Reset Everything
+            Reset All Data
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

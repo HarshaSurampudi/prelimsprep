@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UserResponse, Topic } from "@/lib/types";
 import { formatTopicName, getAllTopics, calculateAccuracy } from "@/lib/utils";
-import { useLocalStorage } from "@/lib/hooks/use-local-storage";
+import { useStorage } from "@/lib/hooks/use-storage";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -36,13 +36,11 @@ function calculateTopicStats(
 }
 
 export function ProgressDisplay() {
-  const [responses, _, isLoading] = useLocalStorage<UserResponse[]>(
-    "responses",
-    []
-  );
+  const [responses, _, isLoading] = useStorage<UserResponse[]>("responses", []);
   const [selectedAttempt, setSelectedAttempt] = useState<number | undefined>(
     undefined
   );
+  const [showStats, setShowStats] = useState(false);
 
   if (isLoading) return null;
 
