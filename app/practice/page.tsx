@@ -4,17 +4,27 @@ import { useQuestions } from "@/lib/hooks/use-questions";
 import { usePracticeSession } from "@/lib/hooks/use-practice-session";
 import { QuestionCard } from "@/app/components/question-card";
 import { PracticeControls } from "@/app/components/practice-controls";
+import { useStorage } from "@/lib/hooks/use-storage";
+import { UserResponse } from "@/lib/types";
+import { QuestionSkeleton } from "@/app/components/skeletons/question-skeleton";
 
 export default function PracticePage() {
   const { questions, loading, error } = useQuestions();
   const { currentQuestion, showExplanation, handleAnswer, handleNext } =
     usePracticeSession(questions);
+  const [responses, setResponses, isLoading] = useStorage<UserResponse[]>(
+    "responses",
+    []
+  );
 
-  if (loading) {
+  if (isLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-lg">Loading questions...</p>
-      </div>
+      <main className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4">
+        <div className="max-w-4xl mx-auto">
+          <PracticeControls />
+          <QuestionSkeleton />
+        </div>
+      </main>
     );
   }
 

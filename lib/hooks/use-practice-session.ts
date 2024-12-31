@@ -1,55 +1,49 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Question, UserResponse } from "@/lib/types";
 import { selectNextQuestion } from "@/lib/question-selection";
-import { useLocalStorage } from "@/lib/hooks/use-local-storage";
+import { useStorage } from "@/lib/hooks/use-storage";
 
 export function usePracticeSession(questions: Question[]) {
-  const [responses, setResponses, isLoading] = useLocalStorage<UserResponse[]>(
+  const [responses, setResponses, isLoading] = useStorage<UserResponse[]>(
     "responses",
     []
   );
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
 
+  // Memoize the next question selection
   useEffect(() => {
     if (!isLoading && !currentQuestion && !showExplanation) {
-      const nextQuestion = selectNextQuestion(questions);
+      const nextQuestion = selectNextQuestion(questions, responses);
       if (nextQuestion) {
         setCurrentQuestion(nextQuestion);
       }
     }
-  }, [questions, currentQuestion, showExplanation, isLoading]);
+  }, [questions, currentQuestion, showExplanation, isLoading, responses]);
 
-  const handleAnswer = (answer: string) => {
-    if (!currentQuestion) return;
+  const handleAnswer = useCallback(
+    (answer: string) => {
+      if (!currentQuestion) return;
 
-    const attemptNumber =
-      responses.filter(
-        (r) => r.question.question_text === currentQuestion.question_text
-      ).length + 1;
+      const response: UserResponse = {
+        question: currentQuestion,
+        userAnswer: answer,
+        isCorrect: answer === currentQuestion.correct_answer,
+        timestamp: Date.now(),
+      };
 
-    const response: UserResponse = {
-      question: currentQuestion,
-      userAnswer: answer,
-      isCorrect: answer === currentQuestion.correct_answer,
-      timestamp: Date.now(),
-    };
+      setResponses((prev: UserResponse[]) => [...prev, response]);
+      setShowExplanation(true);
+    },
+    [currentQuestion, setResponses]
+  );
 
-    const newResponses = [...responses, response];
-    setResponses(newResponses);
-    localStorage.setItem("responses", JSON.stringify(newResponses));
-    setShowExplanation(true);
-
-    console.log(`Answered question on attempt ${attemptNumber}`);
-  };
-
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     setShowExplanation(false);
-    const nextQuestion = selectNextQuestion(questions);
-    setCurrentQuestion(nextQuestion);
-  };
+    setCurrentQuestion(null);
+  }, []);
 
   return {
     currentQuestion,

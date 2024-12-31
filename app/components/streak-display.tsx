@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Flame } from "lucide-react";
-import { useLocalStorage } from "@/lib/hooks/use-local-storage";
+import { useStorage } from "@/lib/hooks/use-storage";
 import { UserResponse } from "@/lib/types";
 import {
   Dialog,
@@ -75,8 +75,8 @@ function calculateStreak(
 
 export function StreakDisplay() {
   const [targetQuestions, setTargetQuestions, targetLoading] =
-    useLocalStorage<number>("targetQuestions", 5);
-  const [responses, _, responsesLoading] = useLocalStorage<UserResponse[]>(
+    useStorage<number>("targetQuestions", 5);
+  const [responses, setResponses, isLoading] = useStorage<UserResponse[]>(
     "responses",
     []
   );
@@ -84,7 +84,7 @@ export function StreakDisplay() {
   const [tempTarget, setTempTarget] = useState(targetQuestions.toString());
 
   // Don't render anything while loading to prevent hydration mismatch
-  if (targetLoading || responsesLoading) {
+  if (targetLoading || isLoading) {
     return null;
   }
 

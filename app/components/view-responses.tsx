@@ -5,25 +5,18 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UserResponse, Topic } from "@/lib/types";
 import { formatTopicName, getAllTopics } from "@/lib/utils";
-import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 
-export function ViewResponses() {
+export function ViewResponses({
+  responses,
+  isLoading,
+}: {
+  responses: UserResponse[];
+  isLoading: boolean;
+}) {
   const [selectedTopic, setSelectedTopic] = useState<Topic | "all">("all");
   const [selectedAttempt, setSelectedAttempt] = useState<number | undefined>(
     undefined
   );
-  const [responses, _, isLoading] = useLocalStorage<UserResponse[]>(
-    "responses",
-    []
-  );
-
-  if (isLoading) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <p className="text-lg text-gray-500 dark:text-gray-400">Loading...</p>
-      </div>
-    );
-  }
 
   // Calculate max attempts across all questions
   const maxAttempt = responses.reduce((max, response) => {
