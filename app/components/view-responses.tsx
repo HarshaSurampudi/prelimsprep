@@ -3,19 +3,17 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { UserResponse, Topic } from "@/lib/types";
+import { Topic } from "@/lib/types";
 import { formatTopicName, getAllTopics } from "@/lib/utils";
-import { useLocalStorage } from "@/lib/hooks/use-local-storage";
-
+import { useResponses } from "@/hooks/use-responses";
+import { useAuth } from "@/hooks/use-auth";
 export function ViewResponses() {
   const [selectedTopic, setSelectedTopic] = useState<Topic | "all">("all");
   const [selectedAttempt, setSelectedAttempt] = useState<number | undefined>(
     undefined
   );
-  const [responses, _, isLoading] = useLocalStorage<UserResponse[]>(
-    "responses",
-    []
-  );
+  const { user } = useAuth();
+  const { responses, isLoading } = useResponses(user?.id ?? null);
 
   if (isLoading) {
     return (
@@ -89,7 +87,7 @@ export function ViewResponses() {
 
   return (
     <div className="space-y-6">
-      <Card className="p-6">
+      <Card className="p-6 dark:bg-gray-900 bg-background">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <h1 className="text-xl font-semibold">Response History</h1>
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">

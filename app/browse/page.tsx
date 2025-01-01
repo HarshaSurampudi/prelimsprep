@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuestions } from "@/lib/hooks/use-questions";
+import { useQuestions } from "@/hooks/use-questions";
 import { useState, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Question } from "@/lib/types";
@@ -139,7 +139,7 @@ function QuestionDisplay({
       <div className="mb-4 flex justify-between items-start gap-4">
         <div>
           <span className="text-sm text-gray-500 dark:text-gray-400">
-            Year: {question.year}
+            Year: {question.collection}
           </span>
           <span className="mx-2 text-gray-300 dark:text-gray-600">|</span>
           <span className="text-sm text-gray-500 dark:text-gray-400">

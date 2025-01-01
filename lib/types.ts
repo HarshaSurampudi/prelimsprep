@@ -1,5 +1,6 @@
 export interface Question {
-  year: number;
+  id: number;
+  collection: string | null;
   question_text: string;
   options: {
     a: string;

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { Question } from '@/lib/types';
+import { useState, useEffect } from "react";
+import { Question } from "@/lib/types";
 
 export function useQuestionState(question: Question) {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);

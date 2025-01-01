@@ -1,6 +1,6 @@
 "use client";
 
-import { Question, UserResponse } from "./types";
+import { Question, Topic, UserResponse } from "../lib/types";
 
 function calculateTopicWeights(
   responses: UserResponse[]
@@ -31,12 +31,20 @@ function calculateTopicWeights(
   return weights;
 }
 
-export function selectNextQuestion(questions: Question[]): Question | null {
+export function selectNextQuestion(
+  questions: Question[],
+  targetTopic?: Topic
+): Question | null {
   // Get responses from localStorage
   const savedResponses = localStorage.getItem("responses");
   const responses: UserResponse[] = savedResponses
     ? JSON.parse(savedResponses)
     : [];
+
+  // Filter questions by target topic if provided
+  const filteredQuestions = targetTopic
+    ? questions.filter((q) => q.topic === targetTopic)
+    : questions;
 
   // Calculate attempt numbers for each question
   const questionAttempts = responses.reduce((acc, response) => {
@@ -47,7 +55,7 @@ export function selectNextQuestion(questions: Question[]): Question | null {
 
   // Get the current attempt number (1-based)
   let currentAttempt = 1;
-  const attemptCounts = questions.map(
+  const attemptCounts = filteredQuestions.map(
     (q) => questionAttempts[q.question_text] || 0
   );
 
@@ -65,7 +73,7 @@ export function selectNextQuestion(questions: Question[]): Question | null {
   }
 
   // Filter questions based on current attempt
-  const availableQuestions = questions.filter(
+  const availableQuestions = filteredQuestions.filter(
     (q) => (questionAttempts[q.question_text] || 0) === currentAttempt - 1
   );
 
@@ -74,8 +82,8 @@ export function selectNextQuestion(questions: Question[]): Question | null {
     return null;
   }
 
-  // For the first attempt, ensure even distribution of 5 questions per topic for first 40 questions
-  if (currentAttempt === 1 && responses.length < 40) {
+  // Skip the initial distribution logic if a topic is selected
+  if (!targetTopic && currentAttempt === 1 && responses.length < 40) {
     // Group questions by topic
     const questionsByTopic = availableQuestions.reduce((acc, q) => {
       if (!acc[q.topic]) acc[q.topic] = [];
@@ -113,6 +121,12 @@ export function selectNextQuestion(questions: Question[]): Question | null {
   // Calculate weights based on past performance
   const weights = calculateTopicWeights(responses);
 
+  // If target topic is selected, just pick a random question from available ones
+  if (targetTopic) {
+    const randomIndex = Math.floor(Math.random() * availableQuestions.length);
+    return availableQuestions[randomIndex];
+  }
+
   // Group questions by topic (only including topics that have questions)
   const questionsByTopic = availableQuestions.reduce((acc, q) => {
     if (!acc[q.topic]) acc[q.topic] = [];
@@ -141,25 +155,25 @@ export function selectNextQuestion(questions: Question[]): Question | null {
   // Select topic first using weights
   let random = Math.random() * totalWeight;
   const originalRandom = random;
-  let selectedTopic: string | null = null;
+  let chosenTopic: string | null = null;
 
   for (const [topic, questions] of Object.entries(questionsByTopic)) {
     const topicWeight = (weights[topic] || 1) * questions.length;
     random -= topicWeight;
     if (random <= 0) {
-      selectedTopic = topic;
+      chosenTopic = topic;
       break;
     }
   }
 
   // Fallback in case of rounding errors
-  if (!selectedTopic) {
+  if (!chosenTopic) {
     const topics = Object.keys(questionsByTopic);
-    selectedTopic = topics[topics.length - 1];
+    chosenTopic = topics[topics.length - 1];
   }
 
   // Then randomly select a question from that topic
-  const topicQuestions = questionsByTopic[selectedTopic];
+  const topicQuestions = questionsByTopic[chosenTopic];
   const selectedQuestion =
     topicQuestions[Math.floor(Math.random() * topicQuestions.length)];
 
