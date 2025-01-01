@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuestions } from "@/hooks/use-questions";
 import { usePracticeSession } from "@/hooks/use-practice-session";
@@ -10,7 +11,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useBookmarks } from "@/hooks/use-bookmarks";
 import { Topic } from "@/lib/types";
 
-export default function PracticePage() {
+function PracticeContent() {
   const searchParams = useSearchParams();
   const topicParam = searchParams.get("topic") as Topic | null;
 
@@ -75,5 +76,19 @@ export default function PracticePage() {
         />
       </div>
     </main>
+  );
+}
+
+export default function PracticePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <p className="text-lg">Loading...</p>
+        </div>
+      }
+    >
+      <PracticeContent />
+    </Suspense>
   );
 }
