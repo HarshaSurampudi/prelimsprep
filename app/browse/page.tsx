@@ -14,7 +14,7 @@ export default function BrowsePage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Initialize edited questions when original questions load
+  // Initialize questions when original questions load
   useEffect(() => {
     if (originalQuestions.length > 0) {
       setQuestions(originalQuestions);
@@ -41,50 +41,17 @@ export default function BrowsePage() {
     question.question_text.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleQuestionUpdate = (index: number, updatedQuestion: Question) => {
-    const newQuestions = [...questions];
-    newQuestions[
-      questions.findIndex(
-        (q) => q.question_text === filteredQuestions[index].question_text
-      )
-    ] = updatedQuestion;
-    setQuestions(newQuestions);
-  };
-
-  const downloadQuestions = () => {
-    const questionsJson = JSON.stringify({ questions }, null, 2);
-    const blob = new Blob([questionsJson], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "questions.json";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
   return (
     <main className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4">
       <div className="max-w-4xl mx-auto">
         <div className="mb-6 space-y-4">
-          <div className="flex justify-between items-center">
-            <Input
-              type="text"
-              placeholder="Search questions..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full max-w-md"
-            />
-            <Button
-              onClick={downloadQuestions}
-              className="gap-2"
-              variant="outline"
-            >
-              <Download className="h-4 w-4" />
-              Download JSON
-            </Button>
-          </div>
+          <Input
+            type="text"
+            placeholder="Search questions..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full max-w-md"
+          />
           <p className="text-sm text-muted-foreground">
             Found {filteredQuestions.length} questions
           </p>
@@ -92,13 +59,7 @@ export default function BrowsePage() {
 
         <div className="space-y-6">
           {filteredQuestions.map((question, index) => (
-            <QuestionDisplay
-              key={index}
-              question={question}
-              onUpdate={(updatedQuestion) =>
-                handleQuestionUpdate(index, updatedQuestion)
-              }
-            />
+            <QuestionDisplay key={index} question={question} />
           ))}
         </div>
       </div>
@@ -106,33 +67,8 @@ export default function BrowsePage() {
   );
 }
 
-function QuestionDisplay({
-  question,
-  onUpdate,
-}: {
-  question: Question;
-  onUpdate: (question: Question) => void;
-}) {
+function QuestionDisplay({ question }: { question: Question }) {
   const [showExplanation, setShowExplanation] = useState(false);
-  const [editedText, setEditedText] = useState(question.question_text);
-
-  // Debounced autosave function
-  const debouncedSave = useCallback(
-    debounce((text: string) => {
-      onUpdate({
-        ...question,
-        question_text: text,
-      });
-    }, 1000),
-    [question, onUpdate]
-  );
-
-  // Handle text changes with autosave
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newText = e.target.value;
-    setEditedText(newText);
-    debouncedSave(newText);
-  };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
@@ -149,12 +85,9 @@ function QuestionDisplay({
       </div>
 
       <div className="space-y-4">
-        <Textarea
-          value={editedText}
-          onChange={handleTextChange}
-          className="min-h-[200px] font-medium text-base"
-          rows={8}
-        />
+        <p className="font-medium text-base whitespace-pre-wrap">
+          {question.question_text}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 my-4">
@@ -177,6 +110,7 @@ function QuestionDisplay({
         variant="outline"
         size="sm"
         onClick={() => setShowExplanation(!showExplanation)}
+        className="bg-background dark:bg-gray-900"
       >
         {showExplanation ? "Hide" : "Show"} Explanation
       </Button>

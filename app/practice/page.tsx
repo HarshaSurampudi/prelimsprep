@@ -25,8 +25,14 @@ function PracticeContent() {
     error: questionsError,
   } = useQuestions();
 
-  const { currentQuestion, showExplanation, handleAnswer, handleNext } =
-    usePracticeSession(questions, user?.id ?? null, topicParam ?? undefined);
+  const {
+    currentQuestion,
+    showExplanation,
+    showDifficultyRating,
+    handleAnswer,
+    handleNext,
+    handleDifficultyRating,
+  } = usePracticeSession(questions, user?.id ?? null, topicParam ?? undefined);
   const { formattedTime, questionsAnswered, incrementQuestionsAnswered } =
     useSessionStats();
 
@@ -70,7 +76,9 @@ function PracticeContent() {
           question={currentQuestion}
           onAnswer={handleQuestionAnswer}
           showExplanation={showExplanation}
+          showDifficultyRating={showDifficultyRating}
           onNext={handleNext}
+          onDifficultyRating={handleDifficultyRating}
           isBookmarked={bookmarkedQuestions.includes(currentQuestion.id)}
           onToggleBookmark={() => toggleBookmark(currentQuestion.id)}
         />

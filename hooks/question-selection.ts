@@ -1,189 +1,285 @@
 "use client";
 
-import { Question, Topic, UserResponse } from "../lib/types";
+import { Question, Topic, UserResponse } from "@/lib/types";
 
-function calculateTopicWeights(
-  responses: UserResponse[]
-): Record<string, number> {
-  // Group responses by topic
-  const topicStats = responses.reduce((acc, response) => {
-    const topic = response.question.topic;
-    if (!acc[topic]) {
-      acc[topic] = { total: 0, correct: 0 };
-    }
-    acc[topic].total++;
-    if (response.isCorrect) acc[topic].correct++;
-    return acc;
-  }, {} as Record<string, { total: number; correct: number }>);
-
-  // Calculate weights based on accuracy and frequency
-  const weights: Record<string, number> = {};
-  Object.entries(topicStats).forEach(([topic, stats]) => {
-    const accuracy = stats.total === 0 ? 0 : stats.correct / stats.total;
-    weights[topic] = (1 - accuracy) * 2 + 1;
-    console.log(
-      `Topic: ${topic}, Accuracy: ${(accuracy * 100).toFixed(
-        1
-      )}%, Weight: ${weights[topic].toFixed(2)}`
-    );
-  });
-
-  return weights;
+export interface TopicStats {
+  mastery: number;       // 0..1 fraction
+  questionCount: number; // total attempts in that topic
+  lastAttempt: number;   // largest index among attempts, or -1 if none
 }
 
+export interface QuestionHistory {
+  attempts: {
+    isCorrect: boolean;
+    attemptNumber: number; // index in the responses array
+  }[];
+  recentSuccess: number;   // fraction correct in the last N attempts (e.g., 3)
+  overallSuccess: number;  // fraction correct among all attempts
+  lastAttempt: number;     // index of the most recent attempt, or -1 if none
+}
+
+export function getTopicStats(
+  responses: UserResponse[]
+): Record<Topic, TopicStats> {
+  const tally: Record<Topic, { correct: number; total: number; lastAttempt: number }> = {} as any;
+
+  for (let i = 0; i < responses.length; i++) {
+    const r = responses[i];
+    const t = r.question.topic;
+    if (!(t in tally)) {
+      tally[t] = { correct: 0, total: 0, lastAttempt: -1 };
+    }
+    tally[t].total += 1;
+    if (r.isCorrect) {
+      tally[t].correct += 1;
+    }
+    // Keep track of the last attempt
+    if (i > tally[t].lastAttempt) {
+      tally[t].lastAttempt = i;
+    }
+  }
+
+  // Convert raw tallies into TopicStats
+  const stats: Record<Topic, TopicStats> = {} as any;
+  for (const topic in tally) {
+    const data = tally[topic as Topic];
+    stats[topic as Topic] = {
+      mastery: data.total > 0 ? data.correct / data.total : 0,
+      questionCount: data.total,
+      lastAttempt: data.lastAttempt,
+    };
+  }
+  return stats;
+}
+
+/**
+ * If no `targetTopic` is given, this function picks the "most needed" topic 
+ * based on (1 - mastery), spacing, coverage, etc.
+ * 
+ * - mastery: if user is weak in that topic, we pick it more
+ * - lastAttempt: if we haven't done it in a while, we pick it more
+ * - coverage: if user rarely answered that topic, we boost it
+ */
+export function selectTopic(
+  questions: Question[],
+  responses: UserResponse[],
+  topicStats: Record<Topic, TopicStats>
+): Topic {
+  // 1) Gather all unique topics from *all* questions
+  const uniqueTopics = new Set<Topic>();
+  questions.forEach(q => uniqueTopics.add(q.topic));
+
+  // If no topics exist, Error
+  if (uniqueTopics.size === 0) {
+    throw new Error("No topics found");
+  }
+
+  // 2) For the *initial stages* (first 40 attempts), pick randomly
+  const totalResponses = responses.length;
+  if (totalResponses < 40) {
+    const allTopics = Array.from(uniqueTopics);
+    const randomIndex = Math.floor(Math.random() * allTopics.length);
+    return allTopics[randomIndex];
+  }
+
+  // 3) If we have at least 40 responses, do the "smart" selection
+  let bestTopic: Topic = Array.from(uniqueTopics)[0];
+  let bestScore = Number.NEGATIVE_INFINITY;
+
+  for (const topic of Array.from(uniqueTopics)) {
+    // Grab topic stats if they exist, else default
+    const stats = topicStats[topic] || {
+      mastery: 0,
+      questionCount: 0,
+      lastAttempt: -1
+    };
+
+    // measure how many questions since we last practiced this topic
+    const spacing = (stats.lastAttempt === -1)
+      ? (totalResponses + 1)  // never attempted => big spacing
+      : (totalResponses - stats.lastAttempt);
+
+    // coverage factor => fewer attempts => higher priority
+    const coverageFactor = (stats.questionCount === 0)
+      ? 1
+      : (1 / stats.questionCount);
+
+    // mastery factor => lower mastery => higher priority
+    const masteryFactor = (1 - stats.mastery);
+
+    const needScore = 
+      masteryFactor * 1.0 +
+      Math.log(spacing + 1) * 0.5 +  // spacing grows with log
+      coverageFactor * 0.3;
+
+    if (needScore > bestScore) {
+      bestScore = needScore;
+      bestTopic = topic;
+    }
+  }
+
+  return bestTopic;
+}
+
+/**
+ * For a given question ID, find all attempts in `responses`.
+ * Return recentSuccess and overallSuccess, plus lastAttempt.
+ */
+export function getQuestionHistory(
+  questionId: number,
+  responses: UserResponse[],
+  recentWindow: number = 3
+): QuestionHistory {
+  const attempts = [];
+  
+  for (let i = 0; i < responses.length; i++) {
+    const r = responses[i];
+    if (r.question.id === questionId) {
+      attempts.push({
+        isCorrect: r.isCorrect,
+        attemptNumber: i,
+      });
+    }
+  }
+
+  if (attempts.length === 0) {
+    // No attempts for this question
+    return {
+      attempts: [],
+      recentSuccess: 0,
+      overallSuccess: 0,
+      lastAttempt: -1,
+    };
+  }
+
+  // overall success
+  const overallCorrect = attempts.filter(a => a.isCorrect).length;
+  const overallSuccess = overallCorrect / attempts.length;
+
+  // recent success: last 'recentWindow' attempts
+  const recent = attempts.slice(-recentWindow);
+  const recentCorrect = recent.filter(a => a.isCorrect).length;
+  const recentSuccess = recentCorrect / recent.length;
+
+  return {
+    attempts,
+    recentSuccess,
+    overallSuccess,
+    lastAttempt: attempts[attempts.length - 1].attemptNumber,
+  };
+}
+
+/**
+ * We compute how urgently the user "needs" to see a question again.
+ * This is a combination of recent & overall success, plus how long 
+ * since last attempt, plus how many attempts they've made, etc.
+ */
+export function calculateRepetitionWeight(
+  history: QuestionHistory,
+  totalResponses: number
+): number {
+  // If never attempted, give a base "new question" boost
+  if (history.attempts.length === 0) {
+    return 2.0;
+  }
+
+  // Start with a base weight
+  let weight = 1.0;
+
+  // Factor 1: recent performance
+  // If user did poorly recently => higher weight
+  // If user did well => lower weight
+  weight *= Math.exp(-history.recentSuccess * 2.0);
+
+  // Factor 2: overall performance
+  // If user is generally good => reduce weight
+  weight *= Math.exp(-history.overallSuccess * 1.0);
+
+  // Factor 3: spacing since last attempt
+  // The more responses have occurred since we last saw it => bigger weight
+  const spacing = totalResponses - history.lastAttempt;
+  weight *= Math.exp(spacing * 0.01);
+
+  // Factor 4: attempt count penalty
+  // If they've attempted it many times, slightly reduce weight 
+  // unless they're still doing poorly
+  const attemptCount = history.attempts.length;
+  const attemptPenalty = Math.exp(-attemptCount * 0.2);
+
+  // Factor in how poor the recent performance is
+  const penaltyReduction = (1 - history.recentSuccess);
+  weight *= (attemptPenalty + penaltyReduction) / 2;
+
+  return weight;
+}
+
+/**
+ * Standard weighted random selection from an array of items.
+ */
+export function weightedRandomSelect<T>(items: T[], weights: number[]): T {
+  const total = weights.reduce((sum, w) => sum + w, 0);
+  if (total <= 0) {
+    // fallback if all weights are zero or negative
+    return items[Math.floor(Math.random() * items.length)];
+  }
+
+  const r = Math.random() * total;
+  let acc = 0;
+  for (let i = 0; i < items.length; i++) {
+    acc += weights[i];
+    if (acc >= r) {
+      return items[i];
+    }
+  }
+  // fallback, shouldn't happen if above logic is correct
+  return items[items.length - 1];
+}
+
+/**
+ * Main function:
+ *  1) Build topic stats from the responses
+ *  2) Determine which topic to pick (or use the targetTopic if provided)
+ *  3) Filter questions by that topic
+ *  4) Calculate a final weight for each question
+ *  5) Weighted random pick
+ */
 export function selectNextQuestion(
   questions: Question[],
+  responses: UserResponse[],
   targetTopic?: Topic
 ): Question | null {
-  // Get responses from localStorage
-  const savedResponses = localStorage.getItem("responses");
-  const responses: UserResponse[] = savedResponses
-    ? JSON.parse(savedResponses)
-    : [];
+  // 1) Build topic stats from these responses
+  const topicStats = getTopicStats(responses);
+  console.log("topicStats", topicStats);
 
-  // Filter questions by target topic if provided
-  const filteredQuestions = targetTopic
-    ? questions.filter((q) => q.topic === targetTopic)
-    : questions;
+  // 2) Choose topic (unless a specific topic is requested)
+  const chosenTopic = targetTopic || selectTopic(questions, responses, topicStats);
+  console.log("chosenTopic", chosenTopic);
+  // Filter to questions in that topic
+  const available = questions.filter(q => q.topic === chosenTopic);
+  if (available.length === 0) return null;
+  // 3) For each question, combine difficulty alignment + repetition weighting
+  const topicLevel = topicStats[chosenTopic]?.mastery ?? 0; 
+  // We'll treat topicLevel as 0..1, but question difficulty is 1..5
+  console.log("topicLevel", topicLevel);
+  const totalResponses = responses.length;
 
-  // Calculate attempt numbers for each question
-  const questionAttempts = responses.reduce((acc, response) => {
-    const key = response.question.question_text;
-    acc[key] = (acc[key] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const weights = available.map(q => {
+    // a) Difficulty alignment: we want questions near the user’s mastery
+    //    If mastery=0.5 => equivalent to difficulty=3. 
+    //    So let's do: exp(-|q.difficulty - (topicLevel * 5)|)
+    const diffCenter = topicLevel * 5;
+    let difficulty = q.difficulty ?? 3;
+    const diffDiff = Math.abs(difficulty - diffCenter);
+    let weight = Math.exp(-diffDiff);
 
-  // Get the current attempt number (1-based)
-  let currentAttempt = 1;
-  const attemptCounts = filteredQuestions.map(
-    (q) => questionAttempts[q.question_text] || 0
-  );
+    // b) Repetition weighting
+    const qHistory = getQuestionHistory(q.id, responses);
+    weight *= calculateRepetitionWeight(qHistory, totalResponses);
 
-  if (attemptCounts.some((count) => count > 0)) {
-    const maxAttempts = Math.max(...Object.values(questionAttempts), 0);
-    const incompleteCounts = attemptCounts.filter(
-      (attempts) => attempts < maxAttempts
-    );
-
-    if (incompleteCounts.length > 0) {
-      currentAttempt = Math.min(...incompleteCounts) + 1;
-    } else {
-      currentAttempt = maxAttempts + 1;
-    }
-  }
-
-  // Filter questions based on current attempt
-  const availableQuestions = filteredQuestions.filter(
-    (q) => (questionAttempts[q.question_text] || 0) === currentAttempt - 1
-  );
-
-  if (availableQuestions.length === 0) {
-    console.log("No available questions remaining for attempt", currentAttempt);
-    return null;
-  }
-
-  // Skip the initial distribution logic if a topic is selected
-  if (!targetTopic && currentAttempt === 1 && responses.length < 40) {
-    // Group questions by topic
-    const questionsByTopic = availableQuestions.reduce((acc, q) => {
-      if (!acc[q.topic]) acc[q.topic] = [];
-      acc[q.topic].push(q);
-      return acc;
-    }, {} as Record<string, Question[]>);
-
-    // Count questions answered per topic
-    const answeredByTopic = responses.reduce((acc, r) => {
-      acc[r.question.topic] = (acc[r.question.topic] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    // Find topics that haven't reached 5 questions yet
-    const eligibleTopics = Object.entries(questionsByTopic)
-      .filter(([topic]) => (answeredByTopic[topic] || 0) < 5)
-      .map(([topic]) => topic);
-
-    if (eligibleTopics.length > 0) {
-      // Select a random topic from eligible topics
-      const randomTopic =
-        eligibleTopics[Math.floor(Math.random() * eligibleTopics.length)];
-      const topicQuestions = questionsByTopic[randomTopic];
-      const randomIndex = Math.floor(Math.random() * topicQuestions.length);
-
-      console.log(
-        `First 40 questions: Topic ${randomTopic} (${
-          answeredByTopic[randomTopic] || 0
-        }/5)`
-      );
-      return topicQuestions[randomIndex];
-    }
-  }
-
-  // Calculate weights based on past performance
-  const weights = calculateTopicWeights(responses);
-
-  // If target topic is selected, just pick a random question from available ones
-  if (targetTopic) {
-    const randomIndex = Math.floor(Math.random() * availableQuestions.length);
-    return availableQuestions[randomIndex];
-  }
-
-  // Group questions by topic (only including topics that have questions)
-  const questionsByTopic = availableQuestions.reduce((acc, q) => {
-    if (!acc[q.topic]) acc[q.topic] = [];
-    acc[q.topic].push(q);
-    return acc;
-  }, {} as Record<string, Question[]>);
-
-  // Calculate total weight only for topics that have questions
-  const totalWeight = Object.entries(questionsByTopic).reduce(
-    (sum, [topic, questions]) => sum + (weights[topic] || 1) * questions.length,
-    0
-  );
-
-  // Log available questions and their probabilities
-  console.log("\nAvailable questions by topic:");
-  Object.entries(questionsByTopic).forEach(([topic, questions]) => {
-    const topicWeight = weights[topic] || 1;
-    const probability = ((questions.length * topicWeight) / totalWeight) * 100;
-    console.log(
-      `${topic}: ${questions.length} questions, ${probability.toFixed(
-        1
-      )}% chance`
-    );
+    return weight;
   });
 
-  // Select topic first using weights
-  let random = Math.random() * totalWeight;
-  const originalRandom = random;
-  let chosenTopic: string | null = null;
-
-  for (const [topic, questions] of Object.entries(questionsByTopic)) {
-    const topicWeight = (weights[topic] || 1) * questions.length;
-    random -= topicWeight;
-    if (random <= 0) {
-      chosenTopic = topic;
-      break;
-    }
-  }
-
-  // Fallback in case of rounding errors
-  if (!chosenTopic) {
-    const topics = Object.keys(questionsByTopic);
-    chosenTopic = topics[topics.length - 1];
-  }
-
-  // Then randomly select a question from that topic
-  const topicQuestions = questionsByTopic[chosenTopic];
-  const selectedQuestion =
-    topicQuestions[Math.floor(Math.random() * topicQuestions.length)];
-
-  // Log the selected question
-  if (selectedQuestion) {
-    console.log(`\nSelected question:
-    Topic: ${selectedQuestion.topic}
-    Random value: ${originalRandom.toFixed(2)}/${totalWeight.toFixed(2)}
-    Question: ${selectedQuestion.question_text.slice(0, 100)}...`);
-  }
-
-  return selectedQuestion;
+  // 4) Weighted random selection
+  return weightedRandomSelect(available, weights);
 }

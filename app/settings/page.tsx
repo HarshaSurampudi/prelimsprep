@@ -2,21 +2,20 @@
 
 import { Card } from "@/components/ui/card";
 import { ResetData } from "@/app/components/reset-data";
-import { useTargetQuestions } from "@/hooks/use-target-questions";
+import { useSettings } from "@/hooks/use-settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 
 export default function SettingsPage() {
-  const { targetQuestions, saveTargetQuestions } = useTargetQuestions({
-    initialTargetQuestions: 5,
-  });
-  const [tempTarget, setTempTarget] = useState(targetQuestions.toString());
+  const { settings, saveSettings } = useSettings();
+  const [tempTarget, setTempTarget] = useState(settings.targetQuestions.toString());
 
   const handleSaveTarget = () => {
     const newTarget = parseInt(tempTarget);
     if (!isNaN(newTarget) && newTarget > 0) {
-      saveTargetQuestions(newTarget);
+      saveSettings({ targetQuestions: newTarget });
     }
   };
 
@@ -43,6 +42,28 @@ export default function SettingsPage() {
                   />
                   <Button onClick={handleSaveTarget}>Save Target</Button>
                 </div>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Practice Settings</h2>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <label className="text-sm font-medium">
+                    Difficulty Rating
+                  </label>
+                  <p className="text-sm text-gray-500">
+                    Ask for difficulty rating after each question
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.showDifficultyRating}
+                  onCheckedChange={(checked) =>
+                    saveSettings({ showDifficultyRating: checked })
+                  }
+                />
               </div>
             </div>
           </Card>

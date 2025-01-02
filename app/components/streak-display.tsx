@@ -2,7 +2,7 @@
 
 import { Card } from "@/components/ui/card";
 import { Flame } from "lucide-react";
-import { useTargetQuestions } from "@/hooks/use-target-questions";
+import { useSettings } from "@/hooks/use-settings";
 import { useResponses } from "@/hooks/use-responses";
 import { UserResponse } from "@/lib/types";
 import { useAuth } from "@/hooks/use-auth";
@@ -66,20 +66,18 @@ function calculateStreak(
 }
 
 export function StreakDisplay() {
-  const { targetQuestions, isLoading: targetLoading } = useTargetQuestions({
-    initialTargetQuestions: 5,
-  });
+  const { settings, isLoading: settingsLoading } = useSettings();
   const { user } = useAuth();
   const { responses, isLoading: responsesLoading } = useResponses(
     user?.id ?? null
   );
 
   // Don't render anything while loading to prevent hydration mismatch
-  if (targetLoading || responsesLoading) {
+  if (settingsLoading || responsesLoading) {
     return null;
   }
 
-  const streak = calculateStreak(responses, targetQuestions);
+  const streak = calculateStreak(responses, settings.targetQuestions);
 
   // Get today's progress
   const today = new Date().toISOString().split("T")[0];
@@ -99,7 +97,7 @@ export function StreakDisplay() {
           <span className="text-2xl font-bold">{streak}</span>
         </div>
         <div className="text-sm">
-          {todayResponses}/{targetQuestions} questions today
+          {todayResponses}/{settings.targetQuestions} questions today
         </div>
       </div>
     </Card>
