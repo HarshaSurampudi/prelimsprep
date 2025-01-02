@@ -178,35 +178,33 @@ export function calculateRepetitionWeight(
   history: QuestionHistory,
   totalResponses: number
 ): number {
-  // If never attempted, give a base "new question" boost
+  // If never attempted, give a higher base boost
   if (history.attempts.length === 0) {
-    return 2.0;
+    return 5.0;
   }
 
   // Start with a base weight
   let weight = 1.0;
 
   // Factor 1: recent performance
-  // If user did poorly recently => higher weight
-  // If user did well => lower weight
   weight *= Math.exp(-history.recentSuccess * 2.0);
 
   // Factor 2: overall performance
-  // If user is generally good => reduce weight
   weight *= Math.exp(-history.overallSuccess * 1.0);
 
   // Factor 3: spacing since last attempt
-  // The more responses have occurred since we last saw it => bigger weight
   const spacing = totalResponses - history.lastAttempt;
-  weight *= Math.exp(spacing * 0.01);
+  // Add a strong penalty for very recent questions
+  if (spacing < 20) {
+    weight *= 0.1;  // 90% reduction for recently seen questions
+  }
+  // Then apply normal spacing growth
+  weight *= Math.exp(spacing * 0.05);
 
   // Factor 4: attempt count penalty
-  // If they've attempted it many times, slightly reduce weight 
-  // unless they're still doing poorly
   const attemptCount = history.attempts.length;
-  const attemptPenalty = Math.exp(-attemptCount * 0.2);
-
-  // Factor in how poor the recent performance is
+  // Stronger penalty for high attempt counts
+  const attemptPenalty = Math.exp(-attemptCount * 0.3);
   const penaltyReduction = (1 - history.recentSuccess);
   weight *= (attemptPenalty + penaltyReduction) / 2;
 
