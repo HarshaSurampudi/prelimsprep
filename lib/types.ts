@@ -1,5 +1,6 @@
 export interface Question {
-  year: number;
+  id: number;
+  collection: string | null;
   question_text: string;
   options: {
     a: string;
@@ -10,6 +11,8 @@ export interface Question {
   correct_answer: string;
   explanation: string;
   topic: Topic;
+  attempts?: number;
+  difficulty?: number;
 }
 
 export type Topic =

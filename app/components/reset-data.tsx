@@ -12,20 +12,21 @@ import {
 } from "@/components/ui/dialog";
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/hooks/use-auth";
+import { useResponses } from "@/hooks/use-responses";
 
 export function ResetData() {
   const [open, setOpen] = useState(false);
+  const { user } = useAuth(false);
+  const { deleteAllResponses, isDeleting } = useResponses(user?.id ?? null);
 
-  const handleReset = () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("responses");
-      window.dispatchEvent(new Event("storage"));
+  const handleReset = async () => {
+    try {
+      await deleteAllResponses();
       setOpen(false);
-
-      // Reload the page after a brief delay to allow the dialog to close
-      setTimeout(() => {
-        window.location.reload();
-      }, 100);
+    } catch (error) {
+      // Error is handled by the mutation
+      console.error(error);
     }
   };
 
@@ -46,11 +47,19 @@ export function ResetData() {
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button
+            variant="outline"
+            onClick={() => setOpen(false)}
+            disabled={isDeleting}
+          >
             Cancel
           </Button>
-          <Button variant="destructive" onClick={handleReset}>
-            Reset Everything
+          <Button
+            variant="destructive"
+            onClick={handleReset}
+            disabled={isDeleting}
+          >
+            {isDeleting ? "Resetting..." : "Reset Everything"}
           </Button>
         </DialogFooter>
       </DialogContent>
