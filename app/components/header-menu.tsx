@@ -32,7 +32,11 @@ export function HeaderMenu() {
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end" forceMount>
+      <DropdownMenuContent
+        className="w-56 bg-background dark:bg-gray-900"
+        align="end"
+        forceMount
+      >
         <div className="flex items-center justify-start gap-2 p-2">
           <div className="flex flex-col space-y-1 leading-none">
             {user.user_metadata.name && (

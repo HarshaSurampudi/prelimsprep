@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Rocket, Bookmark } from "lucide-react";
+import { Rocket, Bookmark, Flag, Clock } from "lucide-react";
 import { StreakDisplay } from "@/app/components/streak-display";
 import { ProgressDisplay } from "@/app/components/progress-display";
 import { HowItWorks } from "@/app/components/how-it-works";
@@ -49,8 +49,8 @@ export default function HomePage() {
         </div>
 
         {/* Additional Navigation */}
-        <div className="flex gap-2 mb-6">
-          <Link href="/bookmarks" className="flex-1">
+        <div className="flex flex-col sm:flex-row gap-2 mb-6">
+          <Link href="/bookmarks" className="sm:flex-1">
             <Button
               variant="outline"
               size="lg"
@@ -60,13 +60,24 @@ export default function HomePage() {
               Bookmarks
             </Button>
           </Link>
-          <Link href="/responses" className="flex-1">
+          <Link href="/responses" className="sm:flex-1">
             <Button
               variant="outline"
               size="lg"
-              className="w-full dark:bg-gray-900 dark:text-white"
+              className="w-full dark:bg-gray-900 dark:text-white flex items-center justify-center gap-2"
             >
+              <Clock className="h-5 w-5" />
               View History
+            </Button>
+          </Link>
+          <Link href="/reports" className="sm:flex-1">
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full dark:bg-gray-900 dark:text-white flex items-center justify-center gap-2"
+            >
+              <Flag className="h-5 w-5" />
+              Reported Issues
             </Button>
           </Link>
         </div>

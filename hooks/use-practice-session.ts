@@ -21,8 +21,18 @@ export function usePracticeSession(
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!isLoading && !currentQuestion && !showExplanation && userId && questions.length > 0) {
-      const nextQuestion = selectNextQuestion(questions, responses, selectedTopic);
+    if (
+      !isLoading &&
+      !currentQuestion &&
+      !showExplanation &&
+      userId &&
+      questions.length > 0
+    ) {
+      const nextQuestion = selectNextQuestion(
+        questions,
+        responses,
+        selectedTopic
+      );
       if (nextQuestion) {
         setCurrentQuestion(nextQuestion);
       }
@@ -84,7 +94,11 @@ export function usePracticeSession(
       // Move to next question
       setShowDifficultyRating(false);
       setShowExplanation(false);
-      const nextQuestion = selectNextQuestion(questions, responses, selectedTopic);
+      const nextQuestion = selectNextQuestion(
+        questions,
+        responses,
+        selectedTopic
+      );
       setCurrentQuestion(nextQuestion);
     } catch (error) {
       console.error("Failed to save difficulty rating:", error);
@@ -101,7 +115,11 @@ export function usePracticeSession(
       setShowDifficultyRating(true);
     } else {
       setShowExplanation(false);
-      const nextQuestion = selectNextQuestion(questions, responses, selectedTopic);
+      const nextQuestion = selectNextQuestion(
+        questions,
+        responses,
+        selectedTopic
+      );
       setCurrentQuestion(nextQuestion);
     }
   };

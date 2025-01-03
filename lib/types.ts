@@ -38,3 +38,22 @@ export interface UserResponse {
   isCorrect: boolean;
   timestamp: number;
 }
+
+export type ReportStatus = "pending" | "resolved" | "rejected";
+
+export interface ReportedIssue {
+  id: number;
+  user_id: string;
+  question_id: number | null;
+  issue_type: string;
+  description: string;
+  status: ReportStatus;
+  admin_comment?: string;
+  created_at: string;
+  questions?: {
+    id: number;
+    question_text: string;
+    topic: Topic;
+    explanation: string;
+  };
+}

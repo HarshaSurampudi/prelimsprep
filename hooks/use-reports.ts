@@ -10,7 +10,7 @@ export function useReports(userId: string | null) {
     issueType,
     description,
   }: {
-    questionId: number;
+    questionId: number | null;
     issueType: string;
     description: string;
   }) => {
