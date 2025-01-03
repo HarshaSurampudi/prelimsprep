@@ -20,12 +20,12 @@ export default function SettingsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4">
+    <main className="p-4 bg-background dark:bg-gray-800 mb-10">
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold mb-6">Settings</h1>
 
         <div className="space-y-6">
-          <Card className="p-6">
+          <Card className="p-6 bg-background dark:bg-gray-900">
             <h2 className="text-xl font-semibold mb-4">Daily Target</h2>
             <div className="space-y-4">
               <div className="space-y-2">
@@ -38,15 +38,17 @@ export default function SettingsPage() {
                     min="1"
                     value={tempTarget}
                     onChange={(e) => setTempTarget(e.target.value)}
-                    className="max-w-[120px]"
+                    className="max-w-[120px] bg-background dark:bg-gray-800"
                   />
-                  <Button onClick={handleSaveTarget}>Save Target</Button>
+                  <Button onClick={handleSaveTarget} variant="outline" className="bg-background dark:bg-gray-800">
+                    Save Target
+                  </Button>
                 </div>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-6 bg-background dark:bg-gray-900">
             <h2 className="text-xl font-semibold mb-4">Practice Settings</h2>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -68,7 +70,7 @@ export default function SettingsPage() {
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-6 bg-background dark:bg-gray-900">
             <h2 className="text-xl font-semibold mb-4">Data Management</h2>
             <div className="space-y-4">
               <div className="space-y-2">

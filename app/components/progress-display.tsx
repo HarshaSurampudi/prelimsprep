@@ -9,7 +9,6 @@ import { UserResponse, Topic } from "@/lib/types";
 import { formatTopicName, getAllTopics, calculateAccuracy } from "@/lib/utils";
 import { useResponses } from "@/hooks/use-responses";
 import { useQuestions } from "@/hooks/use-questions";
-import Link from "next/link";
 import { useState } from "react";
 import {
   BookOpen,

@@ -5,9 +5,6 @@ import { useState, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Question } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
-import { debounce } from "lodash";
 
 export default function BrowsePage() {
   const { questions: originalQuestions, loading, error } = useQuestions();
@@ -42,15 +39,15 @@ export default function BrowsePage() {
   );
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4">
+    <main className="p-4 bg-background dark:bg-gray-800 mb-10">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-6 space-y-4">
+        <div className="mb-6 space-y-4 rounded-lg p-2">
           <Input
             type="text"
             placeholder="Search questions..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full max-w-md"
+            className="w-full bg-background dark:bg-gray-900 rounded-lg" 
           />
           <p className="text-sm text-muted-foreground">
             Found {filteredQuestions.length} questions
@@ -71,7 +68,7 @@ function QuestionDisplay({ question }: { question: Question }) {
   const [showExplanation, setShowExplanation] = useState(false);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+    <div className="bg-background dark:bg-gray-900 rounded-lg shadow p-4">
       <div className="mb-4 flex justify-between items-start gap-4">
         <div>
           <span className="text-sm text-gray-500 dark:text-gray-400">
