@@ -35,7 +35,11 @@ export default function BookmarksPage() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Bookmarked Questions</h1>
           <Link href="/">
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 bg-background dark:bg-gray-900"
+            >
               <ArrowLeft className="h-4 w-4" />
               Back to Home
             </Button>

@@ -79,7 +79,9 @@ export function QuestionCard({
     const diff = touchEndX.current - touchStartX.current;
     if (diff < 0) {
       const offset = Math.max(diff, -maxSwipeOffset);
-      (e.currentTarget as HTMLElement).style.transform = `translateX(${offset}px)`;
+      (
+        e.currentTarget as HTMLElement
+      ).style.transform = `translateX(${offset}px)`;
     }
   };
 
@@ -94,7 +96,7 @@ export function QuestionCard({
       setIsExiting(true);
       setTimeout(onNext, 300);
     } else {
-      (e.currentTarget as HTMLElement).style.transform = 'translateX(0)';
+      (e.currentTarget as HTMLElement).style.transform = "translateX(0)";
     }
   };
 
@@ -118,11 +120,11 @@ export function QuestionCard({
         initial={{ x: 100, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         exit={{ x: -100, opacity: 0 }}
-        transition={{ 
+        transition={{
           type: "spring",
           stiffness: 300,
           damping: 30,
-          opacity: { duration: 0.2 }
+          opacity: { duration: 0.2 },
         }}
       >
         <Card className="p-6 dark:bg-gray-900 bg-background">
@@ -169,11 +171,11 @@ export function QuestionCard({
         initial={{ x: 100, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         exit={{ x: -100, opacity: 0 }}
-        transition={{ 
+        transition={{
           type: "spring",
           stiffness: 300,
           damping: 30,
-          opacity: { duration: 0.2 }
+          opacity: { duration: 0.2 },
         }}
       >
         <Card
@@ -201,7 +203,11 @@ export function QuestionCard({
                 }`}
               >
                 {question.attempts && question.attempts > 0
-                  ? `Attempt #${showExplanation ? question.attempts : question.attempts + 1}`
+                  ? `Attempt #${
+                      showExplanation
+                        ? question.attempts
+                        : question.attempts + 1
+                    }`
                   : "First Attempt"}
               </Badge>
 
@@ -243,20 +249,27 @@ export function QuestionCard({
                     <DialogTitle>Report an Issue</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
-                    <RadioGroup value={reportType} onValueChange={setReportType}>
+                    <RadioGroup
+                      value={reportType}
+                      onValueChange={setReportType}
+                    >
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem
                           value="incorrect_answer"
                           id="incorrect_answer"
                         />
-                        <Label htmlFor="incorrect_answer">Incorrect Answer</Label>
+                        <Label htmlFor="incorrect_answer">
+                          Incorrect Answer
+                        </Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem
                           value="unclear_question"
                           id="unclear_question"
                         />
-                        <Label htmlFor="unclear_question">Unclear Question</Label>
+                        <Label htmlFor="unclear_question">
+                          Unclear Question
+                        </Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="other" id="other" />
@@ -272,7 +285,9 @@ export function QuestionCard({
 
                     <Button
                       onClick={handleReportSubmit}
-                      disabled={!reportType || !reportDescription || isSubmitting}
+                      disabled={
+                        !reportType || !reportDescription || isSubmitting
+                      }
                     >
                       {isSubmitting ? "Submitting..." : "Submit Report"}
                     </Button>
@@ -307,7 +322,9 @@ export function QuestionCard({
                   }}
                   disabled={showExplanation}
                 >
-                  <span className="font-medium mr-2 shrink-0">{key.toUpperCase()}.</span>
+                  <span className="font-medium mr-2 shrink-0">
+                    {key.toUpperCase()}.
+                  </span>
                   <span>{value}</span>
                 </Button>
               ))}
@@ -320,7 +337,7 @@ export function QuestionCard({
                 transition={{
                   duration: 0.4,
                   opacity: { duration: 0.3 },
-                  y: { type: "spring", stiffness: 300, damping: 25 }
+                  y: { type: "spring", stiffness: 300, damping: 25 },
                 }}
                 className="mt-6"
               >
