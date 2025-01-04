@@ -1,6 +1,6 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Flame } from "lucide-react";
 import { useSettings } from "@/hooks/use-settings";
 import { useResponses } from "@/hooks/use-responses";
@@ -72,11 +72,6 @@ export function StreakDisplay() {
     user?.id ?? null
   );
 
-  // Don't render anything while loading to prevent hydration mismatch
-  if (settingsLoading || responsesLoading) {
-    return null;
-  }
-
   const streak = calculateStreak(responses, settings.targetQuestions);
 
   // Get today's progress
@@ -86,20 +81,26 @@ export function StreakDisplay() {
   ).length;
 
   return (
-    <Card className="p-4 mb-6 dark:bg-gray-900 bg-background">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Flame
-            className={`h-6 w-6 ${
-              streak > 0 ? "text-orange-500" : "text-gray-400"
-            }`}
-          />
-          <span className="text-2xl font-bold">{streak}</span>
+    <Card className="p-4 mb-6 dark:bg-gray-900 bg-background h-16">
+      {settingsLoading || responsesLoading ? (
+        <div className="flex items-center justify-center h-full">
+          <p className="text-sm text-muted-foreground">Loading streak...</p>
         </div>
-        <div className="text-sm">
-          {todayResponses}/{settings.targetQuestions} questions today
+      ) : (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Flame
+              className={`h-6 w-6 ${
+                streak > 0 ? "text-orange-500" : "text-gray-400"
+              }`}
+            />
+            <span className="text-2xl font-bold">{streak}</span>
+          </div>
+          <div className="text-sm">
+            {todayResponses}/{settings.targetQuestions} questions today
+          </div>
         </div>
-      </div>
+      )}
     </Card>
   );
 }

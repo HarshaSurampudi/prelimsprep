@@ -164,7 +164,18 @@ export function ProgressDisplay() {
   );
 
   // Don't render anything if either questions or responses are loading
-  if (responsesLoading || questionsLoading || !questions) return null;
+  if (responsesLoading || questionsLoading || !questions) {
+    return (
+      <Card className="w-full dark:bg-gray-900 bg-background">
+        <CardContent className="flex flex-col items-center justify-center py-8">
+          <h3 className="text-lg font-semibold mb-2">Loading Progress</h3>
+          <p className="text-sm text-muted-foreground text-center">
+            Please wait while the progress data is being loaded.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   // Calculate overall statistics
   const allTopics = getAllTopics();
@@ -253,7 +264,16 @@ export function ProgressDisplay() {
     );
 
   if (topicsData.length === 0) {
-    return null;
+    return (
+      <Card className="w-full dark:bg-gray-900 bg-background">
+        <CardContent className="flex flex-col items-center justify-center py-8">
+          <h3 className="text-lg font-semibold mb-2">No Progress Yet</h3>
+          <p className="text-sm text-muted-foreground text-center">
+            Start practicing questions to see your progress and performance.
+          </p>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
